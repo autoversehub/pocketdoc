@@ -529,3 +529,24 @@ input[type=color] { width: 48px; height: 38px; border: 1px solid var(--line); bo
   padding: 0;
   cursor: pointer;
 }
+
+/* save box for iphone */
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 18, .35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 20;
+}
+
+.sheet-card {
+  background: var(--card);
+  width: 100%;
+  max-width: 480px;
+  border-radius: 14px 14px 0 0;
+  padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+}
+
+.sheet-card strong { display: block; font-size: 17px; margin-bottom: 2px; }

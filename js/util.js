@@ -27,15 +27,49 @@ export function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('on'), 2600);
 }
 
+// iphone loses the file name on normal downloads, so it gets the share sheet instead
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 export function download(data, name, type = 'application/pdf') {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
-  const url = URL.createObjectURL(blob);
+  const file = new File([blob], name, { type: blob.type || type });
+
+  if (isIOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+    return saveSheet(file);
+  }
+
+  const url = URL.createObjectURL(file);
   const a = h('a', { href: url, download: name });
   document.body.append(a);
   a.click();
   a.remove();
   // give the browser time to start the download
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+// share needs a fresh tap, so show a small box with a save button
+function saveSheet(file) {
+  document.querySelector('.sheet')?.remove();
+  const close = () => box.remove();
+  const box = h('div', { class: 'sheet', onclick: e => { if (e.target === box) close(); } },
+    h('div', { class: 'sheet-card' },
+      h('strong', {}, 'Your file is ready'),
+      h('div', { class: 'status' }, file.name + ', ' + size(file.size)),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn main', onclick: async () => {
+          try {
+            await navigator.share({ files: [file] });
+            close();
+          } catch (e) {
+            // user closed the share sheet, keep the box open
+          }
+        } }, 'Save or share'),
+        h('button', { class: 'btn', onclick: close }, 'Close')
+      ),
+      h('p', { class: 'hint' }, 'Tap Save to Files to keep it as a ' + (file.name.split('.').pop() || '') + ' file.')
+    )
+  );
+  document.body.append(box);
 }
 
 export function size(bytes) {
