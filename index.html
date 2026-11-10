@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>PocketDoc - free PDF and document tools</title>
+  <meta name="description" content="Free PDF and document tools that run on your own device. Images to PDF, merge, split, compress, sign and more. Nothing gets uploaded.">
+  <meta name="theme-color" content="#f6f5f1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <a href="#/" class="brand">
+      <img src="icons/icon.svg" alt="" width="28" height="28">
+      <span>PocketDoc</span>
+    </a>
+    <span class="tag">runs on your device</span>
+  </header>
+
+  <main id="app"></main>
+
+  <footer class="foot">
+    <p>Your files stay on your device. Nothing is uploaded, there are no accounts and no limits.</p>
+    <p class="small">Built with pdf-lib, PDF.js, JSZip and Tesseract.js.</p>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
