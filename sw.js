@@ -1,6 +1,6 @@
 // keeps a copy of the app so it opens without internet
 // change the version when you update files so phones get the new ones
-const VERSION = 'pocketdoc-v2';
+const VERSION = 'pocketdoc-v3';
 
 const FILES = [
   './',

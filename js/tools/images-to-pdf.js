@@ -20,9 +20,10 @@ export default {
       update();
     };
 
-    const pageSize = select([['fit', 'Same as image'], ['a4', 'A4'], ['letter', 'US Letter'], ['legal', 'US Legal'], ['a5', 'A5']], 'a4');
+    const pageSize = select([['fit', 'Same as photo'], ['a4', 'A4'], ['letter', 'US Letter'], ['legal', 'US Legal'], ['a5', 'A5']], 'fit');
+    const fill = select([['cover', 'Fill the page (cuts edges a bit)'], ['contain', 'Show whole photo (may add white)']], 'cover');
     const orient = select([['auto', 'Auto'], ['portrait', 'Portrait'], ['landscape', 'Landscape']], 'auto');
-    const margin = select([['0', 'None'], ['20', 'Small'], ['40', 'Big']], '20');
+    const margin = select([['0', 'None'], ['20', 'Small'], ['40', 'Big']], '0');
     const look = select([['color', 'Color'], ['gray', 'Grayscale'], ['scan', 'Scanned paper (black and white)']], 'color');
     const quality = select([['0.92', 'High'], ['0.8', 'Medium'], ['0.65', 'Small file']], '0.8');
 
@@ -35,6 +36,7 @@ export default {
       h('div', { class: 'row', style: 'margin-top:16px' },
         field('Page size', pageSize),
         field('Orientation', orient),
+        field('Photo fit', fill),
         field('Margin', margin),
         field('Look', look),
         field('Quality', quality)
@@ -60,8 +62,6 @@ export default {
           await wait();
           // big photos make huge pdfs, 2400px is still sharp when printed
           const c = await imageToCanvas(items[i].file, 2400);
-          applyLook(c, look.value);
-          const img = await pdf.embedJpg(await canvasBytes(c, 'image/jpeg', +quality.value));
 
           let pw, ph;
           if (pageSize.value === 'fit') {
@@ -75,10 +75,17 @@ export default {
             if (orient.value === 'landscape' || (orient.value === 'auto' && wide)) [pw, ph] = [ph, pw];
           }
 
+          // cut the photo to the page shape so there are no white bands
+          const src = fill.value === 'cover' ? cropTo(c, (pw - m * 2) / (ph - m * 2)) : c;
+          applyLook(src, look.value);
+          const img = await pdf.embedJpg(await canvasBytes(src, 'image/jpeg', +quality.value));
+
           const page = pdf.addPage([pw, ph]);
           const boxW = pw - m * 2, boxH = ph - m * 2;
-          const s = Math.min(boxW / c.width, boxH / c.height);
-          const w = c.width * s, hh = c.height * s;
+          const s = Math.min(boxW / src.width, boxH / src.height);
+          // when filling, stretch to the exact box so no thin white line shows from rounding
+          const w = fill.value === 'cover' ? boxW : src.width * s;
+          const hh = fill.value === 'cover' ? boxH : src.height * s;
           page.drawImage(img, { x: (pw - w) / 2, y: (ph - hh) / 2, width: w, height: hh });
         }
 
@@ -102,6 +109,19 @@ export default {
     );
   }
 };
+
+// cut from the middle so the photo matches the page shape
+function cropTo(c, ratio) {
+  let w = c.width, hh = c.height;
+  if (w / hh > ratio) w = Math.round(hh * ratio);
+  else hh = Math.round(w / ratio);
+  if (w === c.width && hh === c.height) return c;
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = hh;
+  out.getContext('2d').drawImage(c, (c.width - w) / 2, (c.height - hh) / 2, w, hh, 0, 0, w, hh);
+  return out;
+}
 
 // grayscale or a strong black and white "scanner" look
 function applyLook(c, look) {
