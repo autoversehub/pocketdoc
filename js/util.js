@@ -54,6 +54,9 @@ export const wait = () => new Promise(r => setTimeout(r, 0));
 export function dropZone({ accept, multiple = false, title, note, camera = false, onFiles }) {
   const input = h('input', { type: 'file', accept, multiple, hidden: true });
   const cam = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true });
+  // some phone galleries only let you pick one photo, the files app lets you pick many
+  const images = accept === 'image/*';
+  const browse = h('input', { type: 'file', accept: '.jpg,.jpeg,.png,.webp,.gif,.bmp,.heic,.heif,.avif', multiple, hidden: true });
 
   const send = list => {
     const files = [...list].filter(f => matches(f, accept));
@@ -63,14 +66,17 @@ export function dropZone({ accept, multiple = false, title, note, camera = false
 
   input.onchange = () => { send(input.files); input.value = ''; };
   cam.onchange = () => { send(cam.files); cam.value = ''; };
+  browse.onchange = () => { send(browse.files); browse.value = ''; };
 
   const box = h('div', { class: 'drop', onclick: e => { if (!e.target.closest('button')) input.click(); } },
     h('strong', {}, title),
     h('span', {}, note || 'or drop files here'),
     h('div', { class: 'drop-actions' },
-      h('button', { class: 'btn main', type: 'button', onclick: () => input.click() }, multiple ? 'Choose files' : 'Choose file'),
+      h('button', { class: 'btn main', type: 'button', onclick: () => input.click() }, images ? (multiple ? 'Choose photos' : 'Choose photo') : (multiple ? 'Choose files' : 'Choose file')),
+      images && multiple && h('button', { class: 'btn', type: 'button', onclick: () => browse.click() }, 'Pick from files'),
       camera && h('button', { class: 'btn', type: 'button', onclick: () => cam.click() }, 'Take photo')
-    )
+    ),
+    images && multiple && h('p', { class: 'hint' }, 'Tip: to pick many photos at once, press and hold the first one, then tap the rest. If your gallery only takes one, use Pick from files.')
   );
 
   box.addEventListener('dragover', e => { e.preventDefault(); box.classList.add('over'); });
@@ -82,13 +88,14 @@ export function dropZone({ accept, multiple = false, title, note, camera = false
   });
 
   // inputs sit outside the box so their clicks don't bubble back into it
-  return h('div', {}, box, input, cam);
+  return h('div', {}, box, input, cam, browse);
 }
 
 function matches(file, accept) {
   if (!accept) return true;
   return accept.split(',').some(a => {
     a = a.trim();
+    if (a === 'image/*' && !file.type) return /\.(jpe?g|png|webp|gif|bmp|heic|heif|avif)$/i.test(file.name);
     if (a.endsWith('/*')) return file.type.startsWith(a.slice(0, -1));
     if (a.startsWith('.')) return file.name.toLowerCase().endsWith(a);
     return file.type === a;
